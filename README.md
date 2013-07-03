@@ -3,7 +3,7 @@ DirectoryWatcher
 
 A directory watcher gateway for Railo that uses the java WatchService API introduced in Java 1.7.
 
-Let your listener cfc implement DirectoryListener.
+Let your listener cfc implement DirectoryListener. If a file change occurs, the appropriate method receives a File object.
 
 Create the gateway as follows:
 
