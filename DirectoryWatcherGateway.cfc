@@ -15,12 +15,9 @@ component {
 
 	public void function start() {
 
-		lock name="DirectoryWatcherGateway" type="exclusive" timeout="1" {
+		lock name="DirectoryWatcherGateway" type="exclusive" timeout="10" {
 			if (variables.state != "running") {
-				// when restart() is called, we enter this loop until the previous execution has ended
-				while (variables.state == "stopping") {
-					Sleep(10)
-				}
+				log log="application" type="information" text="directory watcher gateway starting";
 				variables.watcher = new DirectoryWatcher(config.directory, config.recursive)
 				variables.state = "running"
 				log log="application" type="information" text="directory watcher gateway running";
