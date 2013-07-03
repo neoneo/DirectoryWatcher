@@ -4,7 +4,7 @@ component {
 
 		var file = CreateObject("java", "java.io.File").init(arguments.directory)
 		if (!file.isDirectory()) {
-			Throw("Directory '#arguments.directory#' does not exist or is not a directory", "craft.InvalidArgumentException")
+			Throw("Directory '#arguments.directory#' does not exist or is not a directory")
 		}
 
 		variables.watcher = CreateObject("java", "java.nio.file.FileSystems").getDefault().newWatchService()

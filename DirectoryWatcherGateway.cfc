@@ -15,49 +15,54 @@ component {
 
 	public void function start() {
 
-		if (variables.state != "running") {
-			// when restart() is called, we enter this loop until the previous execution has ended
-			while (variables.state == "stopping") {
-				Sleep(10)
-			}
-			variables.watcher = new DirectoryWatcher(config.directory, config.recursive)
-			variables.state = "running"
+		lock name="DirectoryWatcherGateway" type="exclusive" timeout="1" {
+			if (variables.state != "running") {
+				// when restart() is called, we enter this loop until the previous execution has ended
+				while (variables.state == "stopping") {
+					Sleep(10)
+				}
+				variables.watcher = new DirectoryWatcher(config.directory, config.recursive)
+				variables.state = "running"
+				log log="application" type="information" text="directory watcher gateway running";
 
-			while (variables.state == "running") {
-				var events = variables.watcher.poll()
-				if (!events.isEmpty()) {
-					for (var event in events) {
-						var method = variables.methods[event.type]
-						variables.listener[method](event.file)
+				running:while (variables.state == "running") {
+					var events = variables.watcher.poll()
+					if (!events.isEmpty()) {
+						for (var event in events) {
+							var method = variables.methods[event.type]
+							variables.listener[method](event.file)
+						}
+					}
+
+					// sleep until the next run, but cut it into half seconds, so we can stop the gateway easily
+					var sleepStep = 500
+					var time = 0
+					while (time < variables.config.interval) {
+						sleepStep = Min(sleepStep, variables.config.interval - time)
+						time += sleepStep
+						Sleep(sleepStep)
+						if (variables.state != "running") {
+							break running;
+						}
 					}
 				}
-
-				// sleep until the next run, but cut it into half seconds, so we can stop the gateway easily
-				var sleepStep = 500
-				var time = 0
-				while (time < variables.config.interval) {
-					sleepStep = Min(sleepStep, variables.config.interval - time)
-					time += sleepStep
-					Sleep(sleepStep)
-					if (variables.state != "running") {
-						break;
-					}
-				}
+				variables.watcher.close()
+				variables.state = "stopped"
+				log log="application" type="information" text="directory watcher gateway stopped";
 			}
-			variables.watcher.close()
 		}
+
 	}
 
 	public void function stop() {
-		if (!IsNull(variables.watcher)) {
+		if (variables.state == "running") {
 			variables.state = "stopping"
+			log log="application" type="information" text="directory watcher gateway stopping";
 		}
 	}
 
 	public void function restart() {
-		if (variables.state == "running") {
-			stop()
-		}
+		stop()
 		start()
 	}
 
